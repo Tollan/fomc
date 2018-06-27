@@ -12,13 +12,27 @@
 <script type="text/javascript" src="https://cdn.pydata.org/bokeh/release/bokeh-api-0.13.0.min.js"></script>
 <script src="https://d3js.org/d3.v5.min.js"></script>
 </head>
-
 <body>
-
-<button onclick="addPoint()">Add some data!</button><br/>
-
 <div>
 <script type="text/javascript">
+	
+function importData() {
+	d3.csv("fomc_calendar.csv", function(csv) { 
+		return { 
+			date: new Date(csv.date), 
+			days_before: +csv.days_before,
+			days_since: +csv.days_since  
+		};
+	}).then(function(data) {
+        fomc_calendar = data;
+        
+        source.data.date = fomc_calendar.map(function(row,i) { return row.date; });
+        source.data.days_before = fomc_calendar.map(function(row,i) { return row.days_before; });
+        source.data.days_since = fomc_calendar.map(function(row,i) { return row.days_since; });
+        source.change.emit();
+	});	
+}
+importData();	
 	
 var source = new Bokeh.ColumnDataSource({
 	data: { date: [], days_before: [], days_since: [] }
@@ -30,37 +44,27 @@ var columns = [
 	new Bokeh.Tables.TableColumn({ field: "days_since", title: "days_since" })
 ]    
     
-// make the plot and add some tools
-//var tools = "pan,crosshair,wheel_zoom,box_zoom,reset,save";
-
-//var plot = Bokeh.Plotting.figure({title:'Example of Random data', tools: tools, height: 300, width: 300});
 var data_table = new Bokeh.Tables.DataTable({ source: source, columns: columns }); 
 	
-var select = new Bokeh.Widgets.DatePicker({ title: "Date:", value: Date.now() }); 
+var select = new Bokeh.Widgets.DatePicker({ title: "Date:", value: new Date(Date.now()).toDateString() }); 
+	
+var intervalID = window.setInterval(myCallback, 500);
 
-// Show the plot, appending it to the end of the current
-// section of the document we are in.
-// Bokeh.Plotting.show(plot,document.currentScript.parentElement);    
+function myCallback() {
+	refresh();
+}
+				  
+function handler() {
+	console.log(Date.now());
+}
+	
+function refresh() {
+	source.selected.indices[0] = source.data.date.findIndex(function(element) { return (new Date(element)).toDateString() === select.value; });
+	source.selected.change.emit();
+}
+   
 Bokeh.Plotting.show(data_table, document.currentScript.parentElement);
 Bokeh.Plotting.show(select, document.currentScript.parentElement);
-
-function addPoint() {
-	d3.csv("fomc_calendar.csv", function(csv) { 
-		return { 
-			date: new Date(csv.date), 
-			days_before: +csv.days_before,
-			days_since: +csv.days_since  
-		};
-	}).then(function(data) {
-		//console.log(data);
-        fomc_calendar = data;
-        
-        source.data.date = fomc_calendar.map(function(row,i) { return row.date; });
-        source.data.days_before = fomc_calendar.map(function(row,i) { return row.days_before; });
-        source.data.days_since = fomc_calendar.map(function(row,i) { return row.days_since; });
-        source.change.emit();
-	});	
-}
 
 </script>
 </div>
