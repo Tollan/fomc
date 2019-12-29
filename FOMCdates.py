@@ -2,7 +2,7 @@
 
 import requests
 from lxml import html
-from datetime import *
+from datetime import datetime, timedelta
 import itertools
 from os import path
 import pandas as pd
@@ -89,7 +89,7 @@ def updateFOMCdates():
     FOMCdf = getFOMCdates().join(recentFOMCdf, on=['fomc_date'], how='outer')
     return FOMCdf.sort_values(by=['fomc_date'])
 
-def getFOMCday(FOMCcalendarDf=getFOMCcalendar(), day = date.today()):
+def getFOMCday(FOMCcalendarDf=getFOMCcalendar(), day = datetime.now().date()):
     return FOMCcalendarDf.iloc[bisect(FOMCcalendarDf.index, day)-1]  # may not be a business day
 
 def getReturns():
@@ -105,17 +105,16 @@ def getReturns():
 def calcCumReturns(dailyReturns = getReturns(), days=5):
     cumReturns = dailyReturns['Mkt-RF'].values/100+1
     nextReturns = cumReturns[:]
-    lookForward = days-1
-    for i in range(lookForward):
+    for i in range(days-1):
         nextReturns = nextReturns[1:]
         cumReturns = cumReturns[:-1]*nextReturns
-    cumReturns = (cumReturns-1)*100
-    return np.concatenate((cumReturns, np.full(lookForward, np.nan)))
+    return (cumReturns-1)*100
 
-def getFOMCreturns(FOMCcalendarDf=getFOMCcalendar(), dailyReturns = getReturns()):
+def getFOMCreturns(FOMCcalendarDf=getFOMCcalendar(), dailyReturns = getReturns(), days=5):
     if path.exists("FOMCreturns.csv"):
         return pd.read_csv('FOMCreturns.csv', index_col=[0], parse_dates=['date'], infer_datetime_format=True)
-    cumReturns = calcCumReturns(dailyReturns)
+    cumReturns = calcCumReturns(dailyReturns, days)
+    dailyReturns = dailyReturns[:-days+1]
     dailyReturns['bus_week'] = cumReturns
     fomcReturns = FOMCcalendarDf.join(dailyReturns, how='inner')
     fomcReturns.index.name = 'date'
