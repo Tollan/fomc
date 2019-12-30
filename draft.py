@@ -23,3 +23,33 @@ fomcWeeks = vCalcFOMCweek(fomcDays)
 (fomcDates, fomcDays, fomcWeeks)
 
 np.datetime64(datetime.now().date())
+
+###
+
+import numpy as np, scipy.stats as st
+st.t.interval(0.95, len(a)-1, loc=np.mean(a), scale=st.sem(a))
+
+# vectorize
+# https://stackoverflow.com/questions/15033511/compute-a-confidence-interval-from-sample-data
+
+np.mean(np.split(fomcDays, np.where(fomcDays == -6)[0]))
+
+np.vstack(np.split(fomcDays, np.where(fomcDays == -6)[0][:35]))
+
+np.vstack(np.split(fomcDays, np.where(fomcDays == -6)[0])[:35])
+np.split(fomcDays, np.where(fomcDays == -6)[0])[:,0:35]
+
+fomcDays == np.arange(-6, 35)
+np.equal(fomcDays, np.arange(-6, 35))
+
+np.meshgrid(fomcDays,np.arange(-6, 35))
+np.logical_and(fomcDays,np.arange(-6, 35))
+
+np.split(fomcDays, np.digitize(fomcDays,np.arange(-6, 35)))
+
+arr1inds = arr1.argsort()
+sorted_arr1 = arr1[arr1inds[::-1]]
+sorted_arr2 = arr2[arr1inds[::-1]]
+
+record.mean(axis=0)
+np.average(record, axis=0)
