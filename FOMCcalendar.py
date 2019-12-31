@@ -63,12 +63,15 @@ from scipy.stats import sem, t
 
 # plotFOMC()
 
+FOMCcalendarDf=getFOMCcalendar()
+
+
 def confidenceInterval(arr, confidence=0.95):
-    n = len(arr)
-    m = arr.mean()
-    std_err = sem(arr)
+    n = arr.size
+    mu = arr.sum()/n
+    std_err = arr.std()/n**0.5
     h = std_err * t.ppf((1 + confidence) / 2, n - 1)
-    return (m - h, m, m + h)
+    return (mu - h, mu, mu + h)
 
 def getFOMCstats(fomcReturns=getFOMCreturns(), fomcDayRange=range(-6,35)):
     fomcArr = fomcReturns.drop(['Mkt-RF', 'fomc_week'], 1).values
@@ -92,6 +95,10 @@ def plotFOMC(lookback=1000, fomcReturns=getFOMCreturns(), FOMCcalendarDf=getFOMC
     fig1.yaxis.axis_label = 'Avg. 5-day stock return, t to t+4'
     labels = LabelSet(x='fomc_day', y='mean', text='fomc_day', x_offset=5, y_offset=-10, source=source, text_font_size='10pt')
     fig1.add_layout(labels)
+    
+    popMeanSpan = Span(location=fomcArr[:,1].mean(), dimension='width')
+    fig1.add_layout(popMeanSpan)
+    
     zero_returns = Span(location=0, dimension='width')
     fig1.add_layout(zero_returns)
     tomorrow_fomc = getFOMCday(FOMCcalendarDf)
@@ -110,4 +117,5 @@ def plotFOMC(lookback=1000, fomcReturns=getFOMCreturns(), FOMCcalendarDf=getFOMC
 
 plotFOMC(100, fomcReturns, FOMCcalendarDf)
 
+fomcArr[:,1].mean()
 
