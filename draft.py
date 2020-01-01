@@ -5,27 +5,6 @@ Created on Mon Dec 30 09:07:18 2019
 @author: trenner
 """
 
-fomcDates = np.loadtxt('FOMCdates.csv', dtype='datetime64[D]', delimiter=',')
-
-def vCalcFOMCday(fomcDates, dates, lookback = -6):
-    idx = fomcDates.searchsorted(dates)
-    daysTo = np.busday_count(fomcDates[idx], dates)
-    idx[idx>0] -= 1
-    daysSince = np.busday_count(fomcDates[idx], dates)
-    return np.where(daysTo >= lookback, daysTo, daysSince)
-
-def vCalcFOMCweek(fomcDays):
-    return (fomcDays+1)//5
-
-fomcDays = vCalcFOMCday(fomcDates, dates)
-fomcWeeks = vCalcFOMCweek(fomcDays)
-
-(fomcDates, fomcDays, fomcWeeks)
-
-np.datetime64(datetime.now().date())
-
-###
-
 import numpy as np, scipy.stats as st
 st.t.interval(0.95, len(a)-1, loc=np.mean(a), scale=st.sem(a))
 
@@ -141,3 +120,31 @@ q[0].size
 %timeit 777**0.5
 
 #https://machinelearningmastery.com/how-to-code-the-students-t-test-from-scratch-in-python/
+
+
+
+plotFOMC(100, fomcReturns, FOMCcalendarDf)
+
+plotFOMC(10000, fomcReturns, FOMCcalendarDf)
+
+getFOMCreturns(FOMCcalendarDf, dailyReturns, 4)
+
+for days in np.arange(1, 6):
+    plotFOMC(100, getFOMCreturns(FOMCcalendarDf, dailyReturns, days), FOMCcalendarDf)
+
+getFOMCreturns(FOMCcalendarDf, dailyReturns, 1)
+
+    # band = Band(base='mean', lower=np.arange(-6,35)[(np.arange(-6,35)+1)//10 == 0], upper=np.arange(-6,35)[(np.arange(-6,35)+1)//5 == 0], source=source, level='underlay', fill_alpha=1.0, line_width=1, line_color='black')
+    # fig1.add_layout(band)
+
+    # current_fomc_day = BoxAnnotation(left=tomorrow_fomc.fomc_day, right=tomorrow_fomc.fomc_day+1, fill_alpha=0.1, fill_color='navy')
+    # fig1.add_layout(current_fomc_day)
+
+    # fomcArr = fomcReturns.drop(['Mkt-RF', 'fomc_week'], 1).values
+    # # fomcArr = fomcReturns.drop(['bus_week', 'fomc_week'], 1).values  # daily returns alternate
+    # df = pd.DataFrame(map(lambda day: confidenceInterval(fomcArr[:, 1][fomcArr[:, 0] == day]), fomcDayRange), index=fomcDayRange, columns=['low', 'mean', 'high'])
+    # df.index.name = 'fomc_day'
+    # fig1.xgrid.band_fill_alpha = 0.1
+    # fig1.xgrid.band_fill_color = "red"
+    # band = Band(base='mean', lower=np.arange(-6,35)[(np.arange(-6,35)+1)//10 == 0], upper=np.arange(-6,35)[(np.arange(-6,35)+1)//5 == 0], source=source, level='underlay', fill_alpha=1.0, line_width=1, line_color='black')
+    # fig1.add_layout(band)
