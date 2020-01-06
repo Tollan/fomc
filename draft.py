@@ -5,146 +5,153 @@ Created on Mon Dec 30 09:07:18 2019
 @author: trenner
 """
 
-import numpy as np, scipy.stats as st
-st.t.interval(0.95, len(a)-1, loc=np.mean(a), scale=st.sem(a))
+import pandas as pd
+import numpy as np
+from os import path
+
+def loadReturns():
+    # http://mba.tuck.dartmouth.edu/pages/faculty/ken.french/Data_Library/f-f_factors.html
+    if path.exists("F-F_Research_Data_Factors_daily_CSV.zip"):
+        filename = "F-F_Research_Data_Factors_daily_CSV.zip"
+    else:
+        filename = "http://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/F-F_Research_Data_Factors_daily_CSV.zip"
+    return pd.read_csv(filename, index_col=0, usecols=[0, 1], engine='python', skiprows=4, skipfooter=2,
+        parse_dates=True, infer_datetime_format=True, compression='zip')
+
+dailyReturns = loadReturns()
+
+def test1(dailyReturns):
+    return np.min((dailyReturns.values[:-1], dailyReturns.values[1:]), axis=0)
+
+def test2(dailyReturns):
+    return np.min(np.stack((dailyReturns.values[:-1], dailyReturns.values[1:])), axis=0)
+
+def test3(dailyReturns):
+    return np.min(np.hstack((dailyReturns.values[:-1], dailyReturns.values[1:])), axis=1)
+
+def test4(dailyReturns):
+    return np.where(dailyReturns.values[:-1] < dailyReturns.values[1:], dailyReturns.values[:-1], dailyReturns.values[1:])
 
 
-np.mean(np.split(fomcDays, np.where(fomcDays == -6)[0]))
+test2(dailyReturns)
+test3(dailyReturns)
+%timeit test1(dailyReturns)
+%timeit test4(dailyReturns)
 
-np.vstack(np.split(fomcDays, np.where(fomcDays == -6)[0][:35]))
+returns = dailyReturns.values
 
-np.vstack(np.split(fomcDays, np.where(fomcDays == -6)[0])[:35])
-np.split(fomcDays, np.where(fomcDays == -6)[0])[:,0:35]
+def test5(returns, lookback=5):
+    for n in range(lookback-1):
+        returns = np.where(returns[1:] < returns[:-1], returns[1:], returns[:-1])
+    return returns
 
-fomcDays == np.arange(-6, 35)
-np.equal(fomcDays, np.arange(-6, 35))
+test5(returns)[:10]
 
-np.meshgrid(fomcDays,np.arange(-6, 35))
-np.logical_and(fomcDays,np.arange(-6, 35))
+def test6(returns, lookback=5):
+    a = np.hstack((returns[:-1], returns[1:]))
+    for n in range(lookback-2):
+        a = np.hstack((a[:-1], a[1:,-1:]))
+    return a.min(axis=1)
 
-np.split(fomcDays, np.digitize(fomcDays,np.arange(-6, 35)))
+test6(returns)[:10]
 
-arr1inds = arr1.argsort()
-sorted_arr1 = arr1[arr1inds[::-1]]
-sorted_arr2 = arr2[arr1inds[::-1]]
+%timeit test5(returns)
+%timeit test6(returns)
+%timeit test7(returns)
 
-record.mean(axis=0)
-np.average(record, axis=0)
+def test7(returns, lookback=5):
+    for n in range(lookback-1):
+        trues = (returns[1:] > returns[:-1])[:,0]
+        returns[1:][trues] = returns[:-1][trues]
+    return returns
+
+test7(returns)[:10]
+
+(returns[1:] > returns[:-1])[:,0].shape
+returns[1:].shape
+returns
 
 ###
+# Maximizing returns
 
-fomcReturns = getFOMCreturns()
-fomcReturns
-fomcReturns['bus_week'].values
-dates = fomcReturns.index.values.astype('datetime64[D]')
+returns.shape
+returns[returns >= 0].size/returns.size # percent postive returns
+np.logical_and(returns[1:] >= 0, returns[:-1] >= 0).sum()/returns[returns >= 0].size # percent postive returns following negative returns
+np.logical_and(returns[1:] >= 0, returns[:-1] < 0).sum()/returns[returns >= 0].size # percent postive returns following postive returns
 
-fomcDays = vCalcFOMCday(fomcDates, dates)
-sortedDays = fomcDays[fomcDays.argsort()]
-a = np.split(sortedDays, np.unique(sortedDays, return_index=True)[1])
-a
+returns[returns < 0].size/returns.size # percent negative returns
+np.logical_and(returns[1:] < 0, returns[:-1] < 0).sum()/returns[returns < 0].size # percent negative returns following negative returns
+np.logical_and(returns[1:] < 0, returns[:-1] >= 0).sum()/returns[returns < 0].size # percent negative returns following postive returns
 
-np.vstack(np.hsplit(sortedDays, np.unique(sortedDays, return_index=True)[1]))
-xmean = np.vectorize(np.mean)
-xmean(a)
+prices = (returns/100+1).cumprod()
 
-ci = np.vectorize(lambda x: st.t.interval(0.95, len(x)-1, loc=np.mean(x), scale=st.sem(x)))
-ci(a)
-len(a)
-a
-st.t.interval(0.95, len(a)-1, loc=np.mean(a), scale=st.sem(a))
-a
+returns[5:][(prices[4:] > test5(prices))[:-1]].size
+returns[5:].size
+(returns[5:][(prices[4:] > test5(prices))[:-1]]/100+1).prod()
+(returns[5:]/100+1).prod()
 
-fomcArr = np.transpose(np.array((fomcDays, fomcReturns['bus_week'].values)))
-fomcArr[:,1]
+(returns[returns >= 0]/100+1).prod()
 
-%timeit pd.DataFrame(map(lambda day: confidenceInterval(fomcArr[:, 1][fomcArr[:, 0] == day]), range(-6,35)))
+prices[:10]
+test5(prices)[:10]
 
-%timeit [ fomcArr[:, 1][fomcArr[:, 0] == day] for day in range(-6,35) ]
-q = np.array([ fomcArr[:, 1][fomcArr[:, 0] == day] for day in range(-6,35) ])
-%timeit [ confidenceInterval(x) for x in [ fomcArr[:, 1][fomcArr[:, 0] == day] for day in range(-6,35) ] ]
 
-q[0]
 
-%timeit confidenceInterval(q[0])
 
-import pstats
+###
+# scipy.stats as st
+# st.t.interval(0.95, len(a)-1, loc=np.mean(a), scale=st.sem(a))
 
-import cProfile
 
-cProfile.run('[ confidenceInterval(x) for x in [ fomcArr[:, 1][fomcArr[:, 0] == day] for day in range(-6,35) ] ]')
+# np.mean(np.split(fomcDays, np.where(fomcDays == -6)[0]))
 
-def confidenceInterval(arr, confidence=0.90):
-    n = len(arr)
-    m = arr.mean()
-    std_err = sem(arr)
-    h = std_err * t.ppf((1 + confidence) / 2, n - 1)
-    return (m - h, m, m + h)
+# np.vstack(np.split(fomcDays, np.where(fomcDays == -6)[0][:35]))
 
-%timeit lengths = list(map(len,q))
-%timeit vec = np.vectorize(lambda x: t.ppf((1 + 0.95) / 2, x - 1))
-%timeit vec(lengths)
+# np.vstack(np.split(fomcDays, np.where(fomcDays == -6)[0])[:35])
+# np.split(fomcDays, np.where(fomcDays == -6)[0])[:,0:35]
 
-(1 + 0.95) / 2
-%timeit t.ppf(0.975,700)
-.2*40
+# fomcDays == np.arange(-6, 35)
+# np.equal(fomcDays, np.arange(-6, 35))
 
-confidenceInterval(q[0])
-confidenceInterval2(q[0])
+# np.meshgrid(fomcDays,np.arange(-6, 35))
+# np.logical_and(fomcDays,np.arange(-6, 35))
 
-%timeit confidenceInterval(q[0])
-%timeit confidenceInterval2(q[0])
+# np.split(fomcDays, np.digitize(fomcDays,np.arange(-6, 35)))
 
-%timeit q[0].size
+# arr1inds = arr1.argsort()
+# sorted_arr1 = arr1[arr1inds[::-1]]
+# sorted_arr2 = arr2[arr1inds[::-1]]
 
-%timeit len(q[0])
+# record.mean(axis=0)
+# np.average(record, axis=0)
 
-%timeit q[0].sum()/q[0].size
-%timeit q[0].mean()
+# ###
 
-def confidenceInterval2(arr, confidence=0.95):
-    n = arr.size
-    mu = arr.sum()/n
-    std_err = arr.std()/n**0.5
-    h = std_err * t.ppf((1 + confidence) / 2, n - 1)
-    return (mu - h, mu, mu + h)
+# fomcReturns = getFOMCreturns()
+# fomcReturns
+# fomcReturns['bus_week'].values
+# dates = fomcReturns.index.values.astype('datetime64[D]')
 
-[ confidenceInterval(x) for x in [ fomcArr[:, 1][fomcArr[:, 0] == day] for day in range(-6,35) ] ]
+# fomcDays = vCalcFOMCday(fomcDates, dates)
+# sortedDays = fomcDays[fomcDays.argsort()]
+# a = np.split(sortedDays, np.unique(sortedDays, return_index=True)[1])
+# a
 
-np.array(a)
+# np.vstack(np.hsplit(sortedDays, np.unique(sortedDays, return_index=True)[1]))
+# xmean = np.vectorize(np.mean)
+# xmean(a)
 
-q[0].std()/np.sqrt(q[0].size)
-sem(q[0])
-q[0].size
-
-%timeit np.sqrt(777)
-%timeit 777**0.5
+# ci = np.vectorize(lambda x: st.t.interval(0.95, len(x)-1, loc=np.mean(x), scale=st.sem(x)))
+# ci(a)
+# len(a)
+# a
+# st.t.interval(0.95, len(a)-1, loc=np.mean(a), scale=st.sem(a))
 
 #https://machinelearningmastery.com/how-to-code-the-students-t-test-from-scratch-in-python/
 
+####
 
 
-plotFOMC(100, fomcReturns, FOMCcalendarDf)
 
-plotFOMC(10000, fomcReturns, FOMCcalendarDf)
-
-getFOMCreturns(FOMCcalendarDf, dailyReturns, 4)
-
-for days in np.arange(1, 6):
-    plotFOMC(100, getFOMCreturns(FOMCcalendarDf, dailyReturns, days), FOMCcalendarDf)
-
-getFOMCreturns(FOMCcalendarDf, dailyReturns, 1)
-
-    # band = Band(base='mean', lower=np.arange(-6,35)[(np.arange(-6,35)+1)//10 == 0], upper=np.arange(-6,35)[(np.arange(-6,35)+1)//5 == 0], source=source, level='underlay', fill_alpha=1.0, line_width=1, line_color='black')
-    # fig1.add_layout(band)
-
-    # current_fomc_day = BoxAnnotation(left=tomorrow_fomc.fomc_day, right=tomorrow_fomc.fomc_day+1, fill_alpha=0.1, fill_color='navy')
-    # fig1.add_layout(current_fomc_day)
-
-    # fomcArr = fomcReturns.drop(['Mkt-RF', 'fomc_week'], 1).values
-    # # fomcArr = fomcReturns.drop(['bus_week', 'fomc_week'], 1).values  # daily returns alternate
-    # df = pd.DataFrame(map(lambda day: confidenceInterval(fomcArr[:, 1][fomcArr[:, 0] == day]), fomcDayRange), index=fomcDayRange, columns=['low', 'mean', 'high'])
-    # df.index.name = 'fomc_day'
-    # fig1.xgrid.band_fill_alpha = 0.1
-    # fig1.xgrid.band_fill_color = "red"
-    # band = Band(base='mean', lower=np.arange(-6,35)[(np.arange(-6,35)+1)//10 == 0], upper=np.arange(-6,35)[(np.arange(-6,35)+1)//5 == 0], source=source, level='underlay', fill_alpha=1.0, line_width=1, line_color='black')
-    # fig1.add_layout(band)
+# def findMin(returns, lookback = 5):
+#     returns[:-1]
