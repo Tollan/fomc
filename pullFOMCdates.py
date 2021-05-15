@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import requests
 from lxml import html
 from datetime import datetime, timedelta
@@ -22,6 +20,8 @@ def parseRecentFOMCtext(recentText = getRecentFOMCtext()):
             month = element.split('/')[-1][0:3]
             continue
         day = element.split('-')[-1].rstrip('*').zfill(2)
+        if not day.isdigit():
+            day = element.split(' ')[0].zfill(2)    # for unscheduled calls
         if not day.isdigit():
             continue
         recentFOMCdates += [ datetime.strptime(year+month+day, '%Y%b%d').date() ]
