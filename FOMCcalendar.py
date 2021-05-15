@@ -71,6 +71,7 @@ def printCal():
     cols = cols[-2:] + cols[:-2]
     df = fomcCal[cols]
     df = df[fomcDates[0]:]
-    df.to_csv('FOMCcal.csv', float_format='%.2f')
+    df.to_csv('FOMCcalendar.csv', float_format='%.2f')
+    df['1994-01':].to_csv('FOMCcycle.csv', float_format='%.2f')
 
 printCal()
