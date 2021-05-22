@@ -75,3 +75,18 @@ def printCal():
     df['1994-01':].to_csv('FOMCcycle.csv', float_format='%.2f')
 
 printCal()
+
+df = pd.read_csv('FOMCcycle.csv', index_col=0, parse_dates=True, infer_datetime_format=True)
+df['price'] = np.cumprod((df['Mkt-RF']/100+1).values)
+df['fomc_cycle'] = 0
+df.loc[df['fomc_day'] == -6, 'fomc_cycle'] = 1
+df['fomc_cycle'] = np.cumsum(df['fomc_cycle'].values)
+df = pd.pivot_table(df, index='fomc_cycle', columns='fomc_day', values='price')
+df.to_csv('FOMCsparks.csv', index=False, float_format='%.2f')
+
+fomcCycle = pd.read_csv('FOMCcycle.csv', index_col=0, parse_dates=True, infer_datetime_format=True)
+fomcCycle['start'] = (fomcCycle['fomc_day']+1)%5
+fomcCycle['1994-01':].to_csv('FOMCcycle.csv', float_format='%.2f')
+fomcCycle
+# fomcCycle.loc[(fomcCycle['fomc_day']+1)%5 == 0, 'start'] = 1
+
